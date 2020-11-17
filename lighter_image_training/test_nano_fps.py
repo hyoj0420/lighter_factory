@@ -70,7 +70,7 @@ def lighter_detect():
                         y = int(center_y - h / 2)
                         boxes.append([x, y, w, h])
                         confidences.append(float(confidence))
-            
+            cv2.imshow("Lighter Test FPS", img)
             indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
             camera.frames_displayed += 1
             if (cv2.waitKey(5) & 0xFF) == 27: break # ESC key Stops program
