@@ -7,7 +7,7 @@ DISPLAY_HEIGHT = 360
 SENSOR_MODE = 3         # 1920x1080, 30fps: 2, 1280x720, 60fps: 3
 
 # Load YOLO
-net = cv2.dnn.readNet("custom-train-yolo_1000.weights", "custom1/custom-train-yolo.cfg")
+net = cv2.dnn.readNet("yolov3-tiny_2000.weights", "yolov3-tiny.cfg")
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 classes = ["lighter"]
