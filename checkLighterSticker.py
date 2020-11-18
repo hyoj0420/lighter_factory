@@ -1,17 +1,17 @@
 import cv2
 import numpy as np
-# import picamera
 import os
 import io
 import time
 import multiprocessing
+from csi_camera import CSI_Camera
 
 low_threshold = 0
 high_threshold = 150
-rho = 1  # distance resolution in pixels of the Hough grid
-theta = np.pi / 180  # angular resolution in radians of the Hough grid
-threshold = 200  # minimum number of votes (intersections in Hough grid cell)
-max_line_gap = 20  # maximum gap in pixels between connectable line segments
+rho = 1                 # distance resolution in pixels of the Hough grid
+theta = np.pi / 180     # angular resolution in radians of the Hough grid
+threshold = 200         # minimum number of votes (intersections in Hough grid cell)
+max_line_gap = 20       # maximum gap in pixels between connectable line segments
 
 def get_interest(img) : # 라이터 위치를 찾기 위한 이미지의 절반을 흑백 처리 함수
     img[0:206, :] = 0
@@ -52,18 +52,44 @@ def findRaw(img) :  # 라이터 고정대 좌표를 찾기 위한 함수
 
 def getCapture(cap) :   # 반복적으로 화면 캡쳐를 얻는 함수
     # 로컬에 화면 캡쳐 이미지를 저장함
-    with picamera.PiCamera() as camera :
-        camera.resolution = (416, 416)
-        while True :
-            camera.capture("images/"+str(cap)+".jpg")
-            cap += 1
+    camera = CSI_Camera()
+    camera.create_gstreamer_pipeline(
+        sensor_id = 0,
+        sensor_mode = 2,
+        framerate = 30,
+        flip_method = 0,
+        display_height = 720,
+        display_width = 1280
+    )
+    camera.open(camera.gstreamer_pipeline)
+    camera.start()
+    cv2.namedWindow("Sticker Solution", cv2.WINDOW_AUTOSIZE)
+    
+    if not camera.video_capture.isOpened():
+        print("Unable to open camera")
+        SystemExit(0)
+    
+    try:
+        camera.start_counting_fps()
+        while cv2.getWindowProperty("Sticker Solution", 0) >= 0:
+            _, img = camera.read()
+            cv2.imwrite("images/"+str(cap)+".jpg", img)
+            cv2.imshow("Sticker Solution", img)
+            camera.frames_displayed += 1
+            cap = cap + 1
+            if (cv2.waitKey(5) & 0xFF) == 27: break
+    finally:
+        camera.stop()
+        camera.release()
+        cv2.destroyAllWindows()
+
 
 def yolo(cap) :     # 로컬에 저장된 화면 캡쳐를 불러와 라이터의 스티커 불량 여부를 확인하는 함수
     # 인식이 완료된 화면 캡쳐는 삭제 됨
     raw = 0
     
-    net = cv2.dnn.readNet("yolov3-tiny_4000.weights", "yolov3-tiny.cfg")    # 학습 모델을 불러옴
-    classes = ["Head", "Body"]
+    net = cv2.dnn.readNet("yolov3-tiny_last.weights", "yolov3-tiny (1).cfg")    # 학습 모델을 불러옴
+    classes = ["middle", "back", "front"]
     layer_names = net.getLayerNames()
     output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
     stickers = []
