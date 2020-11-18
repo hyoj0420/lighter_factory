@@ -3,6 +3,8 @@
 가스량을 측정하는 솔루션
 middle (중앙 바), front (앞쪽 선), back (뒤쪽 선) 세 class를 구분함.
 
+Weight file link: https://drive.google.com/file/d/1L1tEzkASFePzuthMshhy4oCBCdf-hJfk/view?usp=sharing
+
 ### mAP
 + _1000: 79.67%
 + _2000: **86.21%**
