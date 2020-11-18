@@ -7,10 +7,10 @@ DISPLAY_HEIGHT = 360
 SENSOR_MODE = 3         # 1920x1080, 30fps: 2, 1280x720, 60fps: 3
 
 # Load YOLO
-net = cv2.dnn.readNet("yolov3-tiny_2000.weights", "yolov3-tiny.cfg")
+net = cv2.dnn.readNet("yolov3-tiny-prn_6000.weights", "yolov3-tiny-prn.cfg")
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
-classes = ["lighter"]
+classes = ["abnomal", "head", "nomal"]
 layer_names = net.getLayerNames()
 output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 colors = np.random.uniform(0, 255, size=(len(classes), 3))
@@ -37,7 +37,7 @@ def lighter_detect():
         display_height = DISPLAY_HEIGHT,
         display_width = DISPLAY_WIDTH,
     )
-    camera.open(camera.create_gstreamer_pipeline)
+    camera.open(camera.gstreamer_pipeline)
     camera.start()
     cv2.namedWindow("Lighter Test FPS", cv2.WINDOW_AUTOSIZE)
 
@@ -48,7 +48,7 @@ def lighter_detect():
     try:
         camera.start_counting_fps()
         while cv2.getWindowProperty("Lighter Test FPS", 0) >= 0:
-            img = read_camera(camera, True)
+            img = read_camera(camera)
             blob = cv2.dnn.blobFromImage(img, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
             net.setInput(blob)
             outs = net.forward(output_layers)
@@ -68,10 +68,12 @@ def lighter_detect():
                         h = int(detection[3] * DISPLAY_HEIGHT)
                         x = int(center_x - w / 2)
                         y = int(center_y - h / 2)
+                        cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 1, cv2.LINE_8)
+                        cv2.putText(img, classes[class_id], (x, y+30), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0), 1)
                         boxes.append([x, y, w, h])
                         confidences.append(float(confidence))
+
             cv2.imshow("Lighter Test FPS", img)
-            indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
             camera.frames_displayed += 1
             if (cv2.waitKey(5) & 0xFF) == 27: break # ESC key Stops program
     finally:
