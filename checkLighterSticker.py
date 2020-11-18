@@ -87,9 +87,10 @@ def getCapture(cap) :   # 반복적으로 화면 캡쳐를 얻는 함수
 def yolo(cap) :     # 로컬에 저장된 화면 캡쳐를 불러와 라이터의 스티커 불량 여부를 확인하는 함수
     # 인식이 완료된 화면 캡쳐는 삭제 됨
     raw = 0
-    
-    net = cv2.dnn.readNet("yolov3-tiny_last.weights", "yolov3-tiny (1).cfg")    # 학습 모델을 불러옴
-    classes = ["middle", "back", "front"]
+    net = cv2.dnn.readNet("yolov3-tiny_4000.weights", "yolov3-tiny-prn.cfg")    # 학습 모델을 불러옴
+    net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+    net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+    classes = ["head", "body"]
     layer_names = net.getLayerNames()
     output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
     stickers = []
@@ -100,8 +101,8 @@ def yolo(cap) :     # 로컬에 저장된 화면 캡쳐를 불러와 라이터�
     prev = time.time()
     
     while True :
-        if os.path.isfile("images/"+str(cap)+".png") :      # 로컬에 저장된 화면 캡쳐를 불러옴
-            img = cv2.imread("images/"+str(cap)+".png")
+        if os.path.isfile("images/"+str(cap)+".jpg") :      # 로컬에 저장된 화면 캡쳐를 불러옴
+            img = cv2.imread("images/"+str(cap)+".jpg")
             try :
                 temp, stick = findRaw(img)      # 라이터 위치를 특정하기 위한 받침대 위치 확인
                 if temp > 0 :
@@ -139,6 +140,9 @@ def yolo(cap) :     # 로컬에 저장된 화면 캡쳐를 불러와 라이터�
 
                 # 인식된 라이터가 다섯개 미만이면 화면 캡쳐가 흔들린 것 혹은 라이터가 아래로 내려간 상태인 것으로 간주
                 if len(boxes) < 5 :
+                    os.remove("images/"+str(cap)+".jpg")
+                    cap += 1
+                    prev = time.time()
                     continue
 
                 boxes.sort()
@@ -197,16 +201,13 @@ def yolo(cap) :     # 로컬에 저장된 화면 캡쳐를 불러와 라이터�
 
                 #-----확인한 불량 여부 가능성과 스티커 위치에 박스 표시-----#
 
-                # for i, index in enumerate(results) :
-                #     cv2.putText(img, "%.2f" % index[4], (index[0], index[1]-10), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
-                #     cv2.rectangle(img, (index[0], index[1]), (index[0]+index[2], index[1]+index[3]), (255, 0, 0), 1, cv2.LINE_8)
-                # cv2.imshow("화면", img)
-
-                # cv2.waitKey(0)
-                # cv2.destroyAllWindows()
+                for i, index in enumerate(results) :
+                    cv2.putText(img, "%.2f" % index[4], (index[0], index[1]-10), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 255), 1)
+                    cv2.rectangle(img, (index[0], index[1]), (index[0]+index[2], index[1]+index[3]), (255, 0, 0), 1, cv2.LINE_8)
+                cv2.imwrite("화면"+str(cap), img)
 
                 # 처리가 끝난 이미지는 무조건 삭제
-                os.remove(str(cap)+".jpg")
+                os.remove("images/"+str(cap)+".jpg")
                 cap += 1
                 prev = time.time()
 
